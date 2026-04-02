@@ -1,0 +1,132 @@
+import requests
+import uuid
+import sys
+import os
+import time
+
+def clear_screen():
+    # Only clear if it's a real terminal
+    if sys.stdin.isatty():
+        os.system('clear' if os.name == 'posix' else 'cls')
+
+def print_banner():
+    print("\n" + "="*40)
+    print("      S E L V A  &  T O O L")
+    print("="*40)
+    print("Channel: https://t.me/selva_card")
+    print("="*40 + "\n")
+
+def send_verification_code(phone_number, silent=False):
+    url = "https://node.taxify.eu/driver-auth/partnerDriverWeb/startAuthentication/"
+    device_id = str(uuid.uuid4())
+    
+    params = {
+        "version": "DP.12.77",
+        "brand": "bolt",
+        "deviceId": device_id,
+        "device_name": "Linux (Chrome 140.0.7339.16)",
+        "language": "en",
+        "device_os_version": "x86_64"
+    }
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://partners.bolt.eu",
+        "Referer": "https://partners.bolt.eu/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "cross-site"
+    }
+    
+    data = {"phone": phone_number}
+    
+    if not silent:
+        print(f"Sending request for phone: {phone_number}...")
+    
+    try:
+        response = requests.post(url, params=params, headers=headers, data=data)
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("code") == 0 or "message" not in result:
+                return True
+            else:
+                if not silent: print(f"Failed with message: {result.get('message')}")
+                return False
+        else:
+            if not silent: print(f"Failed with status code: {response.status_code}")
+            return False
+    except Exception as e:
+        if not silent: print(f"An error occurred: {e}")
+        return False
+
+def main_menu():
+    while True:
+        clear_screen()
+        print_banner()
+        print("1_ ONE NUMBER")
+        print("2_ FILE")
+        print("3_ Contacting the developer")
+        print("\n0_ Exit")
+        
+        try:
+            choice = input("\nSelect an option: ")
+        except EOFError:
+            break
+        
+        if choice == '1':
+            try:
+                phone = input("\nEnter phone number (with +): ")
+                if phone:
+                    success = send_verification_code(phone)
+                    if success:
+                        print("Successfully completed ✅")
+                    else:
+                        print("FAILED ⚠️")
+                input("\nPress Enter to return to menu...")
+            except EOFError:
+                break
+        
+        elif choice == '2':
+            try:
+                file_path = input("\nEnter file path: ")
+                if os.path.exists(file_path):
+                    with open(file_path, 'r') as f:
+                        numbers = [line.strip() for line in f if line.strip()]
+                    
+                    print(f"\nFound {len(numbers)} numbers. Starting process...\n")
+                    for num in numbers:
+                        print(f"Processing {num}: ", end="", flush=True)
+                        success = send_verification_code(num, silent=True)
+                        if success:
+                            print("Successfully completed ✅")
+                        else:
+                            print("FAILED ⚠️")
+                        time.sleep(0.5)
+                    
+                    print("\nAll numbers processed.")
+                else:
+                    print("File not found!")
+                input("\nPress Enter to return to menu...")
+            except EOFError:
+                break
+            
+        elif choice == '3':
+            print("\nRedirecting to developer: https://t.me/S_E_L2_")
+            print("Please visit the link manually.")
+            try:
+                input("\nPress Enter to return to menu...")
+            except EOFError:
+                break
+            
+        elif choice == '0':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice!")
+            time.sleep(1)
+
+if __name__ == "__main__":
+    main_menu()
