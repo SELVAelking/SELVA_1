@@ -1,25 +1,17 @@
 import requests
 import uuid
 import sys
+import json
 import os
 import time
 
-def clear_screen():
-    # Only clear if it's a real terminal
-    if sys.stdin.isatty():
-        os.system('clear' if os.name == 'posix' else 'cls')
+# --- إعدادات البريد الإلكتروني الافتراضي ---
+DEFAULT_EMAIL = "mohaymen012@gmail.com"
 
-def print_banner():
-    print("\n" + "="*40)
-    print("      S E L V A  &  T O O L")
-    print("="*40)
-    print("Channel: https://t.me/selva_card")
-    print("="*40 + "\n")
-
-def send_verification_code(phone_number, silent=False):
+# --- وظيفة تسجيل الدخول (Login) ---
+def bolt_login(phone_number):
     url = "https://node.taxify.eu/driver-auth/partnerDriverWeb/startAuthentication/"
     device_id = str(uuid.uuid4())
-    
     params = {
         "version": "DP.12.77",
         "brand": "bolt",
@@ -28,81 +20,133 @@ def send_verification_code(phone_number, silent=False):
         "language": "en",
         "device_os_version": "x86_64"
     }
-    
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
         "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "Origin": "https://partners.bolt.eu",
-        "Referer": "https://partners.bolt.eu/",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "cross-site"
+        "Referer": "https://partners.bolt.eu/"
     }
-    
     data = {"phone": phone_number}
-    
-    if not silent:
-        print(f"Sending request for phone: {phone_number}...")
     
     try:
         response = requests.post(url, params=params, headers=headers, data=data)
         if response.status_code == 200:
             result = response.json()
             if result.get("code") == 0 or "message" not in result:
+                print(f"DONE LOGIN ✅ ({phone_number})")
                 return True
             else:
-                if not silent: print(f"Failed with message: {result.get('message')}")
-                return False
+                print(f"FAILED LOGIN ❌ ({phone_number}): {result.get('message')}")
         else:
-            if not silent: print(f"Failed with status code: {response.status_code}")
-            return False
+            print(f"FAILED LOGIN ❌ ({phone_number}): Status {response.status_code}")
     except Exception as e:
-        if not silent: print(f"An error occurred: {e}")
-        return False
+        print(f"ERROR LOGIN ❌ ({phone_number}): {e}")
+    return False
 
-def main_menu():
-    while True:
-        clear_screen()
-        print_banner()
-        print("1_ ONE NUMBER")
-        print("2_ FILE")
-        print("3_ Contacting the developer")
-        print("\n0_ Exit")
+# --- وظيفة التسجيل الجديد (Registration) ---
+def bolt_registration(phone_number, email=DEFAULT_EMAIL):
+    url = "https://driverregistration.live.boltsvc.net/driverRegistration/startRegistration"
+    params = {
+        "version": "HP.1.22.7",
+        "device_name": "HP",
+        "device_os_version": "web",
+        "deviceId": "web",
+        "deviceType": "web",
+        "language": "ar-ae"
+    }
+    payload = {
+        "email": email,
+        "phone": phone_number,
+        "city_id": 643,
+        "terms_consent_accepted": 1
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Origin": "https://bolt.eu",
+        "Referer": "https://bolt.eu/"
+    }
+    
+    try:
+        response = requests.post(url, params=params, json=payload, headers=headers)
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("code") == 0:
+                print(f"DONE registration ✅ ({phone_number})")
+                return True
+            else:
+                print(f"FAILED registration ❌ ({phone_number}): {result.get('message')}")
+        else:
+            print(f"FAILED registration ❌ ({phone_number}): Status {response.status_code}")
+    except Exception as e:
+        print(f"ERROR registration ❌ ({phone_number}): {e}")
+    return False
+
+# --- وظيفة معالجة الملفات ---
+def process_file(file_path, action_func):
+    if not os.path.exists(file_path):
+        print(f"Error: File '{file_path}' not found.")
+        return
+    
+    with open(file_path, 'r') as f:
+        numbers = [line.strip() for line in f if line.strip()]
+    
+    print(f"Processing {len(numbers)} numbers from file...")
+    for num in numbers:
+        if not num.startswith('+'):
+            num = '+' + num
+        action_func(num)
+        time.sleep(1)
+
+# --- الواجهة الرئيسية ---
+def main():
+    print("\n" + "="*30)
+    print("      BOLT AUTOMATION TOOL")
+    print("="*30)
+    print("1_ SIGN IN (Login)")
+    print("2_ SIGN UP (Registration)")
+    print("3_ MIX (Login & Registration)")
+    
+    choice = input("\nSelect Option (1, 2, or 3): ").strip()
+    
+    if choice in ['1', '2', '3']:
+        print("\n1_ ONE NUMBER")
+        print("2_ FILE NUMBER")
+        sub_choice = input("Select Option (1 or 2): ").strip()
         
-        try:
-            choice = input("\nSelect an option: ")
-        except EOFError:
-            break
-        
-        if choice == '1':
-            try:
-                phone = input("\nEnter phone number (with +): ")
-                if phone:
-                    success = send_verification_code(phone)
-                    if success:
-                        print("Successfully completed ✅")
-                    else:
-                        print("FAILED ⚠️")
-                input("\nPress Enter to return to menu...")
-            except EOFError:
-                break
-        
-        elif choice == '2':
-            try:
-                file_path = input("\nEnter file path: ")
-                if os.path.exists(file_path):
-                    with open(file_path, 'r') as f:
-                        numbers = [line.strip() for line in f if line.strip()]
-                    
-                    print(f"\nFound {len(numbers)} numbers. Starting process...\n")
-                    for num in numbers:
-                        print(f"Processing {num}: ", end="", flush=True)
-                        success = send_verification_code(num, silent=True)
-                        if success:
-                            print("Successfully completed ✅")
-                        else:
+        if sub_choice == '1':
+            phone = input("Enter phone number (with +): ").strip()
+            if not phone.startswith('+'): phone = '+' + phone
+            
+            if choice == '1': bolt_login(phone)
+            elif choice == '2': bolt_registration(phone)
+            elif choice == '3':
+                bolt_login(phone)
+                bolt_registration(phone)
+                
+        elif sub_choice == '2':
+            path = input("Enter file path: ").strip()
+            
+            if choice == '1': process_file(path, bolt_login)
+            elif choice == '2': process_file(path, bolt_registration)
+            elif choice == '3':
+                def mix_func(num):
+                    bolt_login(num)
+                    bolt_registration(num)
+                process_file(path, mix_func)
+        else:
+            print("Invalid selection.")
+    else:
+        print("Invalid selection.")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        sys.exit(0)
                             print("FAILED ⚠️")
                         time.sleep(0.5)
                     
