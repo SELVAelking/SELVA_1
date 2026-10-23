@@ -79,8 +79,9 @@ POLL_INTERVAL = 15
 # Data Directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'xpanel_data')
+import tempfile
+DATA_DIR = os.path.join(tempfile.gettempdir(), "xpanel_data")
 os.makedirs(DATA_DIR, exist_ok=True)
-
 # File Paths
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
 DAILY_LIMITS_FILE = os.path.join(DATA_DIR, 'daily_limits.json')
