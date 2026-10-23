@@ -3,3 +3,4 @@ Flask
 psycopg2-binary>=2.9.9,<3
 Flask-SocketIO
 Flask-Limiter
+python-telegram-bot
